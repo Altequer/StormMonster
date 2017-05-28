@@ -9,39 +9,41 @@ import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
 
-public class WordCounterBolt implements IRichBolt{
+public class Counter implements IRichBolt{
 
-	Integer id;
-	String name;
-	Map<String, Integer> counters;
+	private Integer id;
+	private String nome;
+	private Map<String, Integer> lista;
 	private OutputCollector collector;
 	
 	@Override
 	public void prepare(Map stormConf, TopologyContext context,
 			OutputCollector collector) {
-		this.counters = new HashMap<String, Integer>();
+		this.lista = new HashMap<String, Integer>();
 		this.collector = collector;
-		this.name = context.getThisComponentId();
+		this.nome = context.getThisComponentId();
 		this.id = context.getThisTaskId();
 		
 	}
-
+	
+	//Faz o processamento da tupla recibida como parâmetro.
 	@Override
-	public void execute(Tuple input) {
-		String str = input.getString(0);
-		if(!counters.containsKey(str)){
-			counters.put(str, 1);
+	public void execute(Tuple tupla) {
+		String str = tupla.getString(0);
+		if(!lista.containsKey(str)){
+			lista.put(str, 1);
 		}else{
-			Integer c = counters.get(str) +1;
-			counters.put(str, c);
+			Integer c = lista.get(str) +1;
+			lista.put(str, c);
 		}
-		collector.ack(input);
+		collector.ack(tupla);
 	}
-
+	
+	//Imprimi todas as palavras do arquivo e suas informações
 	@Override
 	public void cleanup() {
-		System.out.println(" -- Word Counter ["+ name + "-"+id +"]");
-		for(Map.Entry<String, Integer> entry:counters.entrySet()){
+		System.out.println(" Informação ("+ nome + "-"+id +")");
+		for(Map.Entry<String, Integer> entry:lista.entrySet()){
 			System.out.println(entry.getKey()+" : " + entry.getValue());
 		}
 	}

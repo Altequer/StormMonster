@@ -13,29 +13,39 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
-public class LineReaderSpout implements IRichSpout {
-
+public class Spout implements IRichSpout {
+	
+	//Spout que garante que cada mensagem seja processada pelo menos uma vez.
 	private SpoutOutputCollector collector;
-	private FileReader fileReader;
-	private boolean completed = false;
-	private TopologyContext context;
-
+	//Arquivo que selecionado
+	private FileReader arquivo;
+	//Finalizou leitura
+	private boolean finalizou = false;
+	// Este objeto fornece informações da topologia.
+	private TopologyContext contexto;
+	
+	/*
+	 * Carrega arquivo
+	 */
 	@Override
 	public void open(Map conf, TopologyContext context,
 			SpoutOutputCollector collector) {
 		try {
-			this.context = context;
-			this.fileReader = new FileReader(conf.get("inputFile").toString());
+			this.contexto = context;
+			this.arquivo = new FileReader(conf.get("arquivo").toString());
 		} catch (FileNotFoundException e) {
-			throw new RuntimeException("Error reading file "
-					+ conf.get("inputFile"));
+			throw new RuntimeException("Erro ao ler arquivo "
+					+ conf.get("arquivo"));
 		}
 		this.collector = collector;
 	}
 
+	/*
+	 *Neste método estamos apenas lendo uma linha do arquivo e passando para tupla.
+	 */
 	@Override
 	public void nextTuple() {
-		if (completed) {
+		if (finalizou) {
 			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
@@ -43,31 +53,32 @@ public class LineReaderSpout implements IRichSpout {
 			}
 		}
 		String str;
-		BufferedReader reader = new BufferedReader(fileReader);
+		BufferedReader reader = new BufferedReader(arquivo);
 		try {
 			while ((str = reader.readLine()) != null) {
 				this.collector.emit(new Values(str), str);
 			}
 		} catch (Exception e) {
-			throw new RuntimeException("Error reading typle", e);
+			throw new RuntimeException("Erro ao tentar passar para tupla", e);
 		} finally {
-			completed = true;
+			finalizou = true;
 		}
 
 	}
-
+	
+	//Retorna tupla para processamento.
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("line"));
+		declarer.declare(new Fields("linha"));
 	}
-
+	
+	//Fecha arquivo
 	@Override
 	public void close() {
 		try {
-			fileReader.close();
+			arquivo.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println("Não foi possível fechar o arquivo");
 		}
 
 	}
@@ -87,7 +98,7 @@ public class LineReaderSpout implements IRichSpout {
 		// TODO Auto-generated method stub
 
 	}
-
+	
 	@Override
 	public void ack(Object msgId) {
 
